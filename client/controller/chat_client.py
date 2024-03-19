@@ -13,6 +13,7 @@ class ChatClient:
         try:
             self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.client_socket.connect((self.ip, self.port))
+            self.send_username()
             print("Connected to the server!")
             return True
         except Exception as e:
@@ -23,17 +24,16 @@ class ChatClient:
         self.client_socket.send(self.username.encode('utf-8'))
 
     def receive_messages(self):
-        while True:
             try:
                 message = self.client_socket.recv(1024).decode('utf-8')
                 if message:
                     self.handle_message(message)
                 else:
                     print("\nConnection closed by the server")
-                    break
+                    return False
             except Exception as e:
                 print("\nError receiving message: ", str(e))
-                break
+                return False
 
     def send_message(self, message):
         try:
@@ -45,13 +45,22 @@ class ChatClient:
         print("\r" + message + "\n> ", end="")
 
 
-def start_client(ip, port):
+
+
+
+def start_client(ip, port, bot=None):
     username = input("Enter your username: ")
     chat_client = ChatClient(ip, port, username)
 
+    def listening_thrad():
+        while True:
+            if bot and bot.should_send_message():
+                chat_client.send_message(bot.get_message())
+            if not chat_client.receive_messages():
+                break
+
     if chat_client.connect():
-        chat_client.send_username()
-        thread = threading.Thread(target=chat_client.receive_messages)
+        thread = threading.Thread(target=listening_thrad)
         thread.daemon = True
         thread.start()
 
