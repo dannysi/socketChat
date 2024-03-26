@@ -24,6 +24,7 @@ class ChatClient:
         self.client_socket.send(self.username.encode('utf-8'))
 
     def receive_messages(self):
+        while True:
             try:
                 message = self.client_socket.recv(1024).decode('utf-8')
                 if message:
@@ -52,15 +53,9 @@ def start_client(ip, port, bot=None):
     username = input("Enter your username: ")
     chat_client = ChatClient(ip, port, username)
 
-    def listening_thrad():
-        while True:
-            if bot and bot.should_send_message():
-                chat_client.send_message(bot.get_message())
-            if not chat_client.receive_messages():
-                break
 
     if chat_client.connect():
-        thread = threading.Thread(target=listening_thrad)
+        thread = threading.Thread(target=chat_client.receive_messages)
         thread.daemon = True
         thread.start()
 
